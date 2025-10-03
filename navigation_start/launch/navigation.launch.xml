@@ -27,9 +27,9 @@
   <arg name="mvn_pln_patience" default="False"/>
 
   <arg name="laser_min_x" default="0.30"/>
-  <arg name="laser_max_x" default="1.0"/>
-  <arg name="laser_min_y" default="-0.25"/>
-  <arg name="laser_max_y" default="0.25"/>
+  <arg name="laser_max_x" default="1.5"/>
+  <arg name="laser_min_y" default="-0.35"/>
+  <arg name="laser_max_y" default="0.35"/>
   <arg name="laser_min_z" default="0.05"/>
   <arg name="laser_max_z" default="1.00"/>
   <arg name="cloud_min_x" default="0.30"/>
@@ -104,7 +104,7 @@
     
     <param name="cloud_downsampling" value="$(var cloud_downsampling)"/>
     
-    <param name="decay_factor" value="30"/>    
+    <param name="decay_factor" value="20"/>    
     <param name="inflation_radius" value="0.22"/>
     <param name="cost_radius" value="0.25"/> 
 
@@ -140,11 +140,11 @@
         exec="simple_move_node"  
         output="screen"
         respawn="true">
-    <param name="max_linear_speed" value="0.8"/>
-    <param name="max_angular_speed" value="1.25"/>
+    <param name="max_linear_speed" value="0.67"/>
+    <param name="max_angular_speed" value="1.2"/>
 
-    <param name="control_alpha" value="0.2"/>
-    <param name="control_beta" value="0.8"/>
+    <param name="control_alpha" value="1.0"/>
+    <param name="control_beta" value="1.0"/>
 
     <param name="move_head" value="False"/>
     <param name="use_pot_fields" value="$(var use_pot_fields)"/>
