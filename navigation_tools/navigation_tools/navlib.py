@@ -37,15 +37,18 @@ class NavModule(Node):
         self.global_goal_reached = False
         self.goal_reached = False
         self.robot_stop = False
+        self.global_pose = None
+
+        qos = rclpy.qos.QoSProfile(depth=10, reliability=rclpy.qos.ReliabilityPolicy.RELIABLE)
 
         # Publishers
         self.pub_marker = self.create_publisher(Marker, "/nav_goal_marker", 10)
         self.pub_global_goal = self.create_publisher(PoseStamped, "/move_base_simple/goal", 10)
         self.pub_dist_angle = self.create_publisher(Float32MultiArray, "/simple_move/goal_dist_angle", 10)
-        self.pub_robot_stop = self.create_publisher(Empty, "/navigation/stop", 10)
+        self.pub_robot_stop = self.create_publisher(Empty, "/navigation/stop", qos)
 
         # Subscribers
-        self.create_subscription(GoalStatus, "/simple_move/goal_reached", self.callback_goal_reached, 10)
+        self.create_subscription(GoalStatus, "/simple_move/goal_reached", self.callback_goal_reached, qos)
         self.create_subscription(GoalStatus, "/navigation/status", self.callback_global_goal_reached, 10)
         self.create_subscription(Empty, "/navigation/stop", self.callback_stop, 10)
         #self.create_subscription(PoseStamped, "/global_pose", self.global_pose_callback, 10)
@@ -67,9 +70,9 @@ class NavModule(Node):
     def callback_stop(self, msg):
         self.robot_stop = True
 
-    def global_pose_callback(self, msg):
+    def global_pose_callback(self, msg: PoseWithCovarianceStamped):
         self.global_pose = msg
-        self.get_logger.info(f"NavModule.->Global Pose: x={msg.pose.position.x:.2f}, y={msg.pose.position.y:.2f}")
+        self.get_logger().debug(f"NavModule.->Global Pose: x={msg.pose.pose.position.x:.2f}, y={msg.pose.pose.position.y:.2f}")
 
     def pose_stamped2pose_2d(self, pose_stamped):
         pose2d = Pose2D()
@@ -99,9 +102,9 @@ class NavModule(Node):
         self.pub_global_goal.publish(goal)
 
     def handle_robot_stop(self):
-        if not self.global_goal_reached:
-            msg_stop = Empty()
-            self.pub_robot_stop.publish(msg_stop)
+        # if not self.global_goal_reached:
+        # msg_stop = Empty()
+        self.pub_robot_stop.publish(Empty())
 
     def marker_plot(self, goal):
         self.marker.header.frame_id = "map"
@@ -137,17 +140,18 @@ class NavModule(Node):
         result = False
 
         while not self.global_goal_reached and rclpy.ok() and not self.robot_stop and attempts >= 0: # check goal reached or stop signal
-            if goal_distance:
-                current_x, current_y = self.global_pose.pose.position.x, self.global_pose.pose.position.y
+            if goal_distance and self.global_pose:
+                current_x, current_y = self.global_pose.pose.pose.position.x, self.global_pose.pose.pose.position.y
                 current_distance = math.sqrt((goal.x - current_x) ** 2 + (goal.y - current_y) ** 2)
                 if current_distance < goal_distance:
-                    result = True
+                    self.global_goal_reached = True
                     break
 
             attempts -= 1
             executor.spin_once(timeout_sec=0.1)
 
         if self.global_goal_reached:
+            self.get_logger().info('NavModule.->Nav Goal Reached')
             result = True
         elif self.robot_stop:
             self.get_logger().info('NavModule.->Nav Signal Stop')
