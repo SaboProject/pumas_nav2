@@ -19,13 +19,6 @@ from tf_transformations import euler_from_quaternion, quaternion_from_euler
 
 class NavModule(Node):
     """Navigation Module for the robot"""
-    __instance = None
-
-    def __new__(cls, *args, **kargs):
-        if cls.__instance is None:
-            cls.__instance = super(NavModule, cls).__new__(cls)
-            cls.__initialized = False
-        return cls.__instance
 
     def __init__(self):
 
@@ -132,23 +125,23 @@ class NavModule(Node):
         self.robot_stop = False
         attempts = int(timeout * 10) if timeout != 0 else float('inf')
 
-        self.send_goal(goal_pose) # send nav goal
-
         executor = SingleThreadedExecutor()
         executor.add_node(self)
 
+        self.send_goal(goal_pose) # send nav goal
         result = False
 
         while not self.global_goal_reached and rclpy.ok() and not self.robot_stop and attempts >= 0: # check goal reached or stop signal
             if goal_distance and self.global_pose:
                 current_x, current_y = self.global_pose.pose.pose.position.x, self.global_pose.pose.pose.position.y
                 current_distance = math.sqrt((goal.x - current_x) ** 2 + (goal.y - current_y) ** 2)
+                self.get_logger().warn(f'NavModule.->Current Distance to Goal: {current_distance:.2f} m')
                 if current_distance < goal_distance:
                     self.global_goal_reached = True
                     break
 
             attempts -= 1
-            executor.spin_once(timeout_sec=0.1)
+            self.executor.spin_once(timeout_sec=0.1)
 
         if self.global_goal_reached:
             self.get_logger().info('NavModule.->Nav Goal Reached')
@@ -161,6 +154,7 @@ class NavModule(Node):
             result = False
 
         self.handle_robot_stop()
+        executor.remove_node(self)
 
         return result
 
