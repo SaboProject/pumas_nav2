@@ -125,7 +125,7 @@ class NavModule(Node):
         self.pub_marker.publish(self.marker)
 
     def go_abs(self, goal: Pose2D, timeout, goal_distance=None) -> bool:
-
+        self.get_logger().info(f'NavModule.->Go to Absolute Goal: x={goal.x}, y={goal.y}, theta={goal.theta}, goal_distance={goal_distance}')
         goal_pose = self.create_goal_pose(goal.x, goal.y, goal.theta, "map")
 
         self.global_goal_reached = False
